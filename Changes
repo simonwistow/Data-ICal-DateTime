@@ -1,3 +1,7 @@
+0.62 - 
+    * Documentation patches
+    * Adding setting of exdates and rdates
+
 0.61 - Wed Sep 21 17:48:36 BST 2005
     * Make Clone a prereq
 
