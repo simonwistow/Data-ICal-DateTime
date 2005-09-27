@@ -336,7 +336,7 @@ C<EXRULE>s in this object.
 May return undef.
 
 If passed one or more L<DateTime> lists, L<DateTime::Span> lists, L<DateTime::Set>s,
-or L<DateTime::SpanSet>s then set the recurrence rules to be those.
+or L<DateTime::SpanSet>s then set the recurrence exclusion rules to be those.
 
 =cut
 
@@ -472,6 +472,8 @@ Returns a string representing the summary of this event.
 
 May return undef.
 
+If passed a new value then sets that to be the new summary (and will escape all relevant characters).
+
 =cut 
 
 sub summary {
@@ -492,6 +494,8 @@ sub summary {
 Returns a string representing the summary of this event.
 
 May return undef.
+
+If passed a new value then sets that to be the new description (and will escape all relevant characters).
 
 =cut 
 
