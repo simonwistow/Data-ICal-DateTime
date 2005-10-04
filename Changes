@@ -1,4 +1,6 @@
-0.62 - 
+0.62 - Tue Oct  4 15:32:57 BST 2005
+    * Added auto setting of end if you set all_day without an existing end
+    * Related to that worked round a bug related to Palm floating events noticed by Graham Gough
     * Documentation patches
     * Adding setting of exdates and rdates
 
