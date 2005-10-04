@@ -6,7 +6,7 @@ use Data::ICal;
 use DateTime::Set;
 use DateTime::Format::ICal;
 
-our $VERSION = '0.62';
+our $VERSION = '0.63';
 
 # mmm, mixin goodness
 sub import {
@@ -399,9 +399,11 @@ sub _date_set {
     $self->property($name) || return undef;
     my @dates;
     for (@{ $self->property($name) }) {
-        my $date     = DateTime::Format::ICal->parse_datetime($_->value);
-        # $date->set_time_zone($_->parameters->{TZID}) if $_->parameters->{TZID};
-        push @dates, $date;
+        foreach my $bit (split /,/, $_->value) {
+            my $date     = DateTime::Format::ICal->parse_datetime($bit);
+            # $date->set_time_zone($_->parameters->{TZID}) if $_->parameters->{TZID};
+            push @dates, $date;
+        }
     }
     return DateTime::Set->from_datetimes( dates => \@dates );
 
