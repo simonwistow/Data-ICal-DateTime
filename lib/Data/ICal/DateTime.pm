@@ -6,14 +6,15 @@ use Data::ICal;
 use DateTime::Set;
 use DateTime::Format::ICal;
 
-our $VERSION = '0.63';
+our $VERSION = '0.64';
 
 # mmm, mixin goodness
 sub import {
     my $class = shift;
     no strict 'refs';
     no warnings 'redefine';
-    *Data::ICal::events = \&events;
+    *Data::ICal::events   = \&events;
+    *Data::ICal::collapse = \&collapse;
     foreach my $sub (qw(start end duration period summary description original
                         all_day floating recurrence recurrence_id rdate exrule exdate uid 
                         _rule_set _date_set explode is_in _normalise split_up _escape _unescape)) 
@@ -111,17 +112,39 @@ sub events {
     my $period = shift;
 
 
+    my @events = grep  { $_->ical_entry_type eq 'VEVENT' } @{$self->entries};
+
     # NOTE: this won't normalise events   
-    return grep  { $_->ical_entry_type eq 'VEVENT' } @{$self->entries} if (!$set);
+    return @events if (!$set);
+
+    return $self->collapse([ @events ], $set, $period);
+
+}
+
+=head2 collapse <events> <span> [period]
+
+Provides a L<Data::ICal> object with a method to collapse C<recurrence-id>s.
+
+Given a list of events, some of which might have C<recurrence-id>s,
+return a list of events with all recurrences within C<span> and all 
+C<recurrence-id>s handled correctly.
+
+Used internally by C<events>.
+
+=cut
+
+sub collapse {
+    my ($self, $events, $set, $period) = @_;
+    my @events = @$events;
 
     my %rid;
-    ENTRY: for (@{$self->entries}) {
-        next unless $_->ical_entry_type eq 'VEVENT';
+    ENTRY: for (@events) {
         if ($_->recurrence_id){
             foreach my $exploded ($_->explode($set)) {
                 my $uid = $exploded->uid; $uid = rand().{}.time unless defined $uid;
                 foreach my $e (@{$rid{$uid}}) {
                     next unless $e->start == $exploded->recurrence_id;
+                    # TODO: does this need to merge fields?
                     $e = $exploded;
                 }
             }            
@@ -130,7 +153,7 @@ sub events {
         my $uid = $_->uid; $uid = rand().{}.time unless defined $uid;
         push @{$rid{$uid}}, $_->explode($set);
     }
-    my @events;
+    @events = ();
     for (values %rid) {
         if (!defined $period) {
             push @events, @$_;
@@ -139,6 +162,8 @@ sub events {
         }
     }
     return @events;
+
+
 }
 
 
@@ -642,8 +667,10 @@ sub explode {
             delete $event->{properties}->{$_} for qw(rrule exrule rdate exdate duration period);
 
             $event->start($dt);
-            my $end = $dt + $e{duration};
-            $event->end($end);
+			if (defined $e{duration}) {
+	            my $end = $dt + $e{duration};
+    	        $event->end($end);
+			}
             $event->all_day($self->all_day);
             $event->original($self);
             push @events, $event;
@@ -680,6 +707,7 @@ sub split_up {
     my $event  = shift;
     my $period = shift;
 
+	return ($event) if $event->floating;
 
     my @new;
     my $span = DateTime::Span->from_datetimes( start => $event->start, end => $event->end );
@@ -783,10 +811,10 @@ sub _normalise {
         $e{recur} = (defined $e{recur}) ? $e{recur}->union($e{rdate}) : $e{rdate};
     }
 
+	my $end = $e{end} || $e{start}->clone->add(seconds => 1 );
+    $e{span}     = DateTime::Span->from_datetimes( start => $e{start}, end => $end );
 
-    $e{span}     = DateTime::Span->from_datetimes( start => $e{start}, end => $e{end} );
-
-    $e{duration} = $e{span}->duration;
+    $e{duration} = $e{span}->duration if $e{end};
 
     return %e;
 }
