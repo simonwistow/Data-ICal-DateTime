@@ -1,4 +1,4 @@
-0.64 -
+0.64 - Wed Oct 12 13:59:39 BST 2005
     * Split events() up into events() and collapse()
     * Fix a bug with exploding floating events
 
