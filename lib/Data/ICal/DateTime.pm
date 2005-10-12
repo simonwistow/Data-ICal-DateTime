@@ -124,7 +124,7 @@ sub events {
 
 }
 
-=head2 collapse <events> <span> [period]
+=head2 collapse <events> 
 
 Provides a L<Data::ICal> object with a method to collapse C<recurrence-id>s.
 
