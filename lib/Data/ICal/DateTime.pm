@@ -116,8 +116,11 @@ sub events {
 
     # NOTE: this won't normalise events   
     return @events if (!$set);
+    @events = map { $_->explode($set) } @events;
+    @events = $self->collapse(@events);
 
-    return $self->collapse([ @events ], $set, $period);
+    return @events unless defined $period;
+    return map { $_->split_up($period) } @events;
 
 }
 
@@ -134,33 +137,33 @@ Used internally by C<events>.
 =cut
 
 sub collapse {
-    my ($self, $events, $set, $period) = @_;
-    my @events = @$events;
+    my ($self, @events) = @_;
 
     my %rid;
-    ENTRY: for (@events) {
-        if ($_->recurrence_id){
-            foreach my $exploded ($_->explode($set)) {
-                my $uid = $exploded->uid; $uid = rand().{}.time unless defined $uid;
-                foreach my $e (@{$rid{$uid}}) {
-                    next unless $e->start == $exploded->recurrence_id;
-                    # TODO: does this need to merge fields?
-                    $e = $exploded;
-                }
-            }            
-            next ENTRY;
+
+    my @recurs;
+    for (@events) {
+        my $uid = $_->uid; 
+        # TODO: this feels very hacky
+        $uid = rand().{}.time unless defined $uid;
+        $_->uid($uid);
+        if ($_->recurrence_id) {
+            push @recurs, $_;    
+        } else {
+            push @{$rid{$uid}}, $_;
         }
-        my $uid = $_->uid; $uid = rand().{}.time unless defined $uid;
-        push @{$rid{$uid}}, $_->explode($set);
+    }
+
+    foreach my $e (@recurs) {
+        my $uid = $e->uid;
+        for (@{$rid{$uid}}) {
+            next unless $_->start == $e->recurrence_id;
+            # TODO: does this need to merge fields?
+            $_ = $e;
+        }
     }
     @events = ();
-    for (values %rid) {
-        if (!defined $period) {
-            push @events, @$_;
-        } else {
-            push @events, map { $_->split_up($period) } @$_;
-        }
-    }
+    push @events, @{$rid{$_}} for keys %rid;
     return @events;
 
 
@@ -667,10 +670,10 @@ sub explode {
             delete $event->{properties}->{$_} for qw(rrule exrule rdate exdate duration period);
 
             $event->start($dt);
-			if (defined $e{duration}) {
-	            my $end = $dt + $e{duration};
-    	        $event->end($end);
-			}
+            if (defined $e{duration}) {
+                my $end = $dt + $e{duration};
+                $event->end($end);
+            }
             $event->all_day($self->all_day);
             $event->original($self);
             push @events, $event;
@@ -707,7 +710,7 @@ sub split_up {
     my $event  = shift;
     my $period = shift;
 
-	return ($event) if $event->floating;
+    return ($event) if $event->floating;
 
     my @new;
     my $span = DateTime::Span->from_datetimes( start => $event->start, end => $event->end );
@@ -811,7 +814,7 @@ sub _normalise {
         $e{recur} = (defined $e{recur}) ? $e{recur}->union($e{rdate}) : $e{rdate};
     }
 
-	my $end = $e{end} || $e{start}->clone->add(seconds => 1 );
+    my $end = $e{end} || $e{start}->clone->add(seconds => 1 );
     $e{span}     = DateTime::Span->from_datetimes( start => $e{start}, end => $end );
 
     $e{duration} = $e{span}->duration if $e{end};
