@@ -74,7 +74,7 @@ Data::ICal::DateTime - convenience methods for using Data::ICal with DateTime
                                            # Set, Span, or SetSpan
 
 
-    $cal->add($event);
+    $cal->add_entry($event);
 
 methods
 
