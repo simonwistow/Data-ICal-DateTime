@@ -531,7 +531,7 @@ sub _simple {
 
     if ($val) {
         delete $self->{properties}->{$name};
-        $self->add_property( $name => $value );
+        $self->add_property( $name => $val );
     }
 
     $uid = $self->property($name) || return undef;
