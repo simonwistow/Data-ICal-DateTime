@@ -16,7 +16,7 @@ sub import {
     *Data::ICal::events   = \&events;
     *Data::ICal::collapse = \&collapse;
     foreach my $sub (qw(start end duration period summary description original
-                        all_day floating recurrence recurrence_id rdate exrule exdate uid 
+                        all_day floating recurrence recurrence_id rdate exrule exdate uid url
                         _rule_set _date_set explode is_in _normalise split_up _escape _unescape)) 
     {
         *{"Data::ICal::Entry::Event::$sub"} = \&$sub;
@@ -193,7 +193,7 @@ sub start {
     my $dtstart = $self->property('dtstart') || return undef;
     my $ret     = DateTime::Format::ICal->parse_datetime($dtstart->[0]->value);
 
-    # $ret->set_time_zone($dtstart->[0]->parameters->{TZID}) if $dtstart->[0]->parameters->{TZID};
+    eval { $ret->set_time_zone($dtstart->[0]->parameters->{TZID}) } if $dtstart->[0]->parameters->{TZID};
 
     return $ret;
 
@@ -234,7 +234,7 @@ sub end {
     my $dtend  = $self->property('dtend') || return undef;
     my $ret    = DateTime::Format::ICal->parse_datetime($dtend->[0]->value);
 
-    # $ret->set_time_zone($dtend->[0]->parameters->{TZID}) if ($dtend->[0]->parameters->{TZID});
+    eval { $ret->set_time_zone($dtend->[0]->parameters->{TZID}) } if ($dtend->[0]->parameters->{TZID});
     $ret->truncate(to => 'day' )->subtract( nanoseconds => 1 ) if $all_day;
 
     return $ret;
@@ -524,6 +524,23 @@ sub recurrence_id {
 
 }
 
+sub _simple {
+    my $self = shift;
+    my $name = shift;
+    my $val  = shift;
+
+    if ($val) {
+        delete $self->{properties}->{$name};
+        $self->add_property( $name => $value );
+    }
+
+    $uid = $self->property($name) || return undef;
+    return $uid->[0]->value;
+
+}
+
+
+
 =head2 uid
 
 Returns the uid of this event.
@@ -534,17 +551,9 @@ If passed a new value then sets that to be the new uid value.
 
 sub uid {
     my $self = shift;
-    my $uid  = shift;
-
-    if ($uid) {
-        delete $self->{properties}->{uid};
-        $self->add_property( uid => $uid );
-    }
-
-    $uid = $self->property('uid') || return undef;
-    return $uid->[0]->value;
-
+	return $self->_simple('uid', @_);
 }
+
 
 =head2 summary
 
@@ -558,20 +567,12 @@ If passed a new value then sets that to be the new summary (and will escape all 
 
 sub summary {
     my $self = shift;
-    my $summ = shift;
-
-    if ($summ) {
-        delete $self->{properties}->{summary};
-        $self->add_property( summary => $summ );
-    }
-
-    $summ = $self->property('summary') || return undef;
-    return $summ->[0]->value;
+	return $self->_simple('summary', @_);
 }
 
 =head2 description
 
-Returns a string representing the summary of this event.
+Returns a string representing the description of this event.
 
 May return undef.
 
@@ -582,17 +583,24 @@ If passed a new value then sets that to be the new description (and will escape 
 
 sub description {
     my $self = shift;
-    my $desc = shift;
-
-    if ($desc) {
-        delete $self->{properties}->{description};
-        $self->add_property( description => $desc );
-    }
- 
-    $desc = $self->property('description') || return undef;
-    return $desc->[0]->value;
-
+	return $self->_simple('description', @_);
 }
+
+=head2 url
+
+Returns a string representing the url of this event.
+
+May return undef.
+
+If passed a new value then sets that to be the new description (and will escape all relevant characters).
+
+=cut 
+
+sub url {
+    my $self = shift;
+	return $self->_simple('url', @_);
+}
+
 
 
 sub _escape {
@@ -657,14 +665,13 @@ sub explode {
 
     if($e{recur} && $e{recur}->intersects($span)) {
         my $int_set = $e{recur}->intersection($span);
-
       
         # Change the event's recurrence details so that only the events
         # inside the time span we're interested in are listed.
         $e{recur} = $int_set;
         my $it    = $e{recur}->iterator;
         while(my $dt = $it->next()) {
-            next if $e{exrule} && $e{exrule}->contains($dt);
+	        next if $e{exrule} && $e{exrule}->contains($dt);
             next if $e{exdate} && $e{exdate}->contains($dt);            
             my $event = $self->clone();
             delete $event->{properties}->{$_} for qw(rrule exrule rdate exdate duration period);
@@ -810,7 +817,7 @@ sub _normalise {
         $e{end} = $e{start} + $e{duration};
     }
 
-    if ($e{rdate}) {
+    if (defined $e{rdate}) {
         $e{recur} = (defined $e{recur}) ? $e{recur}->union($e{rdate}) : $e{rdate};
     }
 
