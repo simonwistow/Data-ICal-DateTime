@@ -17,7 +17,7 @@ sub import {
     *Data::ICal::collapse = \&collapse;
     foreach my $sub (qw(start end duration period summary description original
                         all_day floating recurrence recurrence_id rdate exrule exdate uid url
-                        _rule_set _date_set explode is_in _normalise split_up _escape _unescape)) 
+                        _simple_property _rule_set _date_set explode is_in _normalise split_up _escape _unescape _make_dt_param)) 
     {
         *{"Data::ICal::Entry::Event::$sub"} = \&$sub;
     }
@@ -179,6 +179,14 @@ May return undef.
 If passed a L<DateTime> object will set that to be the new start time.
 
 =cut 
+
+sub _make_dt_param {
+    my $self = shift;
+    my $dt   = shift;
+    my $tmp  = $dt->clone->set_time_zone('floating');
+    my $new  = DateTime::Format::ICal->format_datetime($tmp);
+    return [ $new, { TZID => $dt->time_zone_long_name } ];
+}
     
 sub start {
     my $self = shift;
@@ -186,7 +194,7 @@ sub start {
 
     if ($new) {
          delete $self->{properties}->{dtstart};
-         $self->add_property(dtstart => DateTime::Format::ICal->format_datetime($new));
+         $self->add_property(dtstart => $self->_make_dt_param($new));
     }
 
 
@@ -198,6 +206,7 @@ sub start {
     return $ret;
 
 }
+
 
 =head2 end
 
@@ -225,7 +234,7 @@ sub end {
              $update->add( days => 1); 
              $update->set( hour => 0, minute => 0, second => 0 );
          }
-         $self->add_property( dtend => DateTime::Format::ICal->format_datetime($update) );
+         $self->add_property( dtend => $self->_make_dt_param($update) );
          $self->property('dtend')->[0]->parameters->{VALUE} = 'DATE' if $all_day;
 
     }
@@ -524,7 +533,7 @@ sub recurrence_id {
 
 }
 
-sub _simple {
+sub _simple_property {
     my $self = shift;
     my $name = shift;
     my $val  = shift;
@@ -534,8 +543,8 @@ sub _simple {
         $self->add_property( $name => $val );
     }
 
-    $uid = $self->property($name) || return undef;
-    return $uid->[0]->value;
+    $val = $self->property($name) || return undef;
+    return $val->[0]->value;
 
 }
 
@@ -551,7 +560,7 @@ If passed a new value then sets that to be the new uid value.
 
 sub uid {
     my $self = shift;
-	return $self->_simple('uid', @_);
+	return $self->_simple_property('uid', @_);
 }
 
 
@@ -567,7 +576,7 @@ If passed a new value then sets that to be the new summary (and will escape all 
 
 sub summary {
     my $self = shift;
-	return $self->_simple('summary', @_);
+	return $self->_simple_property('summary', @_);
 }
 
 =head2 description
@@ -583,7 +592,7 @@ If passed a new value then sets that to be the new description (and will escape 
 
 sub description {
     my $self = shift;
-	return $self->_simple('description', @_);
+	return $self->_simple_property('description', @_);
 }
 
 =head2 url
@@ -598,7 +607,7 @@ If passed a new value then sets that to be the new description (and will escape 
 
 sub url {
     my $self = shift;
-	return $self->_simple('url', @_);
+	return $self->_simple_property('url', @_);
 }
 
 
