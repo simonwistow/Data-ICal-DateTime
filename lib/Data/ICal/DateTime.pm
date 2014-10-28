@@ -486,10 +486,10 @@ sub _rule_set {
 
     my @recurrence;
     my $start = $self->start || return undef;
-    my $tz    = $start->time_zone;
+    #my $tz    = $start->time_zone;
 
     $start = $start->clone;
-    $start->set_time_zone("floating");
+    #$start->set_time_zone("floating");
 
     my $set = DateTime::Set->empty_set;
     $self->property($name) || return undef;
