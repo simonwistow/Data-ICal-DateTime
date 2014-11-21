@@ -17,7 +17,7 @@ sub import {
     *Data::ICal::collapse = \&collapse;
     foreach my $sub (qw(start end duration period summary description original
                         all_day floating recurrence recurrence_id rdate exrule exdate uid url
-                        _simple_property _rule_set _date_set explode is_in _normalise split_up _escape _unescape _make_dt_param)) 
+                        _simple_property _rule_set _date_set explode is_in _normalise split_up _escape _unescape _make_dt_param))
     {
         *{"Data::ICal::Entry::Event::$sub"} = \&$sub;
     }
@@ -33,7 +33,7 @@ Data::ICal::DateTime - convenience methods for using Data::ICal with DateTime
 =head1 SYNPOSIS
 
     # performs mixin voodoo
-    use Data::ICal::DateTime; 
+    use Data::ICal::DateTime;
     my $cal = Data::ICal->new( filename => 'example.ics');
 
 
@@ -43,21 +43,21 @@ Data::ICal::DateTime - convenience methods for using Data::ICal with DateTime
 
     my @events = $cal->events();           # all VEVENTS
     my @week   = $cal->events($span);      # just in that week
-    my @week   = $cal->events($span,'day');# explode long events into days 
+    my @week   = $cal->events($span,'day');# explode long events into days
 
     my $event = Data::ICal::Entry::Event->new();
-    
+
     $event->start($start);                 # $start is a DateTime object
     $event->end($end);                     # so is $end
 
     $event->all_day                        # is this an all day event
 
-    $event->duration($duration);           # $duration is DateTime::Duration 
-    $event->recurrence($recurrence);       # $reccurence is a DateTime list, 
-                                           # a DateTime::Span list,  
-                                           # a DateTime::Set, 
+    $event->duration($duration);           # $duration is DateTime::Duration
+    $event->recurrence($recurrence);       # $reccurence is a DateTime list,
+                                           # a DateTime::Span list,
+                                           # a DateTime::Set,
                                            # or a DateTime::SpanSet
- 
+
     $event->start;                         # returns a DateTime object
     $event->end;                           # ditto
     $event->duration;                      # returns a DateTime::Duration
@@ -68,9 +68,9 @@ Data::ICal::DateTime - convenience methods for using Data::ICal with DateTime
     $event->exdate;                        # returns a DateTime::Set
     $event->explode($span);                # returns an array of sub events
                                            # (if this is recurring);
-    $event->explode($span,'week');         # if any events are longer than a 
+    $event->explode($span,'week');         # if any events are longer than a
                                            # week then split them up
-    $event->is_in($span);                  # whether this event falls within a 
+    $event->is_in($span);                  # whether this event falls within a
                                            # Set, Span, or SetSpan
 
 
@@ -95,13 +95,13 @@ returned including expansion of all recurring events. All events will be
 normalised to have a dtstart and dtend rather than any other method of
 determining their start and stop time.
 
-Additionally you can pass a period string which can be one of the 
+Additionally you can pass a period string which can be one of the
 following
 
-    year month week day hour minute second 
+    year month week day hour minute second
 
-This will explode an event into as many sub events as needed e.g a 
-period of 'day' will explode a 2-day event into 2 one day events with 
+This will explode an event into as many sub events as needed e.g a
+period of 'day' will explode a 2-day event into 2 one day events with
 the second starting just after the first
 
 =cut
@@ -114,7 +114,7 @@ sub events {
 
     my @events = grep  { $_->ical_entry_type eq 'VEVENT' } @{$self->entries};
 
-    # NOTE: this won't normalise events   
+    # NOTE: this won't normalise events
     return @events if (!$set);
     @events = map { $_->explode($set) } @events;
     @events = $self->collapse(@events);
@@ -124,12 +124,12 @@ sub events {
 
 }
 
-=head2 collapse <events> 
+=head2 collapse <events>
 
 Provides a L<Data::ICal> object with a method to collapse C<recurrence-id>s.
 
 Given a list of events, some of which might have C<recurrence-id>s,
-return a list of events with all recurrences within C<span> and all 
+return a list of events with all recurrences within C<span> and all
 C<recurrence-id>s handled correctly.
 
 Used internally by C<events>.
@@ -143,12 +143,12 @@ sub collapse {
 
     my @recurs;
     for (@events) {
-        my $uid = $_->uid; 
+        my $uid = $_->uid;
         # TODO: this feels very hacky
         $uid = rand().{}.time unless defined $uid;
         $_->uid($uid);
         if ($_->recurrence_id) {
-            push @recurs, $_;    
+            push @recurs, $_;
         } else {
             push @{$rid{$uid}}, $_;
         }
@@ -178,7 +178,7 @@ May return undef.
 
 If passed a L<DateTime> object will set that to be the new start time.
 
-=cut 
+=cut
 
 sub _make_dt_param {
     my $self = shift;
@@ -187,10 +187,10 @@ sub _make_dt_param {
     my $new  = DateTime::Format::ICal->format_datetime($tmp);
     return [ $new, { TZID => $dt->time_zone_long_name } ];
 }
-    
+
 sub start {
     my $self = shift;
-    my $new  = shift; 
+    my $new  = shift;
 
     if ($new) {
          delete $self->{properties}->{dtstart};
@@ -216,22 +216,22 @@ May return undef.
 
 If passed a L<DateTime> object will set that to be the new end time.
 
-=cut 
+=cut
 
 
 sub end {
     my $self = shift;
     my $new  = shift;
 
-    # iCal represents all-day events by using ;VALUE=DATE 
+    # iCal represents all-day events by using ;VALUE=DATE
     # and setting DTEND=end_date + 1
     my $all_day = $self->all_day;
 
     if ($new) {
          delete $self->{properties}->{dtend};
-         my $update = $new->clone; 
-         if ($all_day) {              
-             $update->add( days => 1); 
+         my $update = $new->clone;
+         if ($all_day) {
+             $update->add( days => 1);
              $update->set( hour => 0, minute => 0, second => 0 );
          }
          $self->add_property( dtend => $self->_make_dt_param($update) );
@@ -271,7 +271,7 @@ sub all_day {
         $self->end($dtend);
         $dtend  = $self->property('dtend');
     }
-    
+
     my $cur = (defined $dtend && defined $dtend->[0]->parameters->{VALUE} && $dtend->[0]->parameters->{VALUE} eq 'DATE') || 0;
 
     if (defined $new && $new != $cur) {
@@ -290,7 +290,7 @@ sub all_day {
 
 =head2 floating
 
-An event is considered floating if it has a start but no end. It is intended 
+An event is considered floating if it has a start but no end. It is intended
 to represent an event that is associated with a given calendar date and time
 of day, such as an anniversary and should not be considered as taking up any
 amount of time.
@@ -313,7 +313,7 @@ sub floating {
     if (defined $new && $new != $cur) {
         # it is floating - delete the end
         if ($new) {
-            delete $self->{properties}->{dtend};            
+            delete $self->{properties}->{dtend};
         # it's not floating - simulate end as 1 nanosecond before midnight after the start
         } else {
             my $dtend = $self->start->clone->add( days => 1 )->truncate(to => 'day' )->subtract( nanoseconds => 1 );
@@ -333,14 +333,14 @@ event.
 
 May return undef.
 
-If passed a L<DateTime::Duration> object will set that to be the new 
+If passed a L<DateTime::Duration> object will set that to be the new
 duration.
 
-=cut 
+=cut
 
 sub duration {
     my $self = shift;
-    my $new  = shift; 
+    my $new  = shift;
 
     if ($new) {
          delete $self->{properties}->{duration};
@@ -352,7 +352,7 @@ sub duration {
 }
 
 
-=head2 period 
+=head2 period
 
 Returns a L<DateTime::Span> object representing the period of this
 event.
@@ -383,19 +383,19 @@ sub period {
 
 =head2 recurrence
 
-Returns a L<DateTime::Set> object representing the union of all the 
+Returns a L<DateTime::Set> object representing the union of all the
 C<RRULE>s in this object.
 
 May return undef.
 
-If passed one or more L<DateTime> lists, L<DateTime::Span> lists, L<DateTime::Set>s, 
+If passed one or more L<DateTime> lists, L<DateTime::Span> lists, L<DateTime::Set>s,
 or L<DateTime::SpanSet>s then set the recurrence rules to be those.
 
-=cut 
+=cut
 
 sub recurrence {
     my $self = shift;
-    
+
 
     return $self->_rule_set('rrule', @_);
 }
@@ -469,7 +469,7 @@ sub _date_set {
 
 }
 
- 
+
 sub _rule_set {
     my $self  = shift;
     my $name  = shift;
@@ -516,7 +516,7 @@ If passed a L<DateTime> object will set that to be the new recurrence-id.
 
 sub recurrence_id {
     my $self = shift;
-    my $new  = shift; 
+    my $new  = shift;
 
     if ($new) {
          delete $self->{properties}->{'recurrence-id'};
@@ -554,7 +554,7 @@ sub _simple_property {
 
 Returns the uid of this event.
 
-If passed a new value then sets that to be the new uid value. 
+If passed a new value then sets that to be the new uid value.
 
 =cut
 
@@ -572,7 +572,7 @@ May return undef.
 
 If passed a new value then sets that to be the new summary (and will escape all relevant characters).
 
-=cut 
+=cut
 
 sub summary {
     my $self = shift;
@@ -587,7 +587,7 @@ May return undef.
 
 If passed a new value then sets that to be the new description (and will escape all relevant characters).
 
-=cut 
+=cut
 
 
 sub description {
@@ -603,7 +603,7 @@ May return undef.
 
 If passed a new value then sets that to be the new description (and will escape all relevant characters).
 
-=cut 
+=cut
 
 sub url {
     my $self = shift;
@@ -629,25 +629,25 @@ sub _unescape {
 
 =head2 explode <span> [period]
 
-Takes L<DateTime::Set>, L<DateTime::Span> or L<DateTime::SpanSet> and 
+Takes L<DateTime::Set>, L<DateTime::Span> or L<DateTime::SpanSet> and
 returns an array of events.
 
 If this is not a recurring event, and it falls with the span, then it
 will return one event with the dtstart and dtend properties set and no
 other time information.
 
-If this is a recurring event then it will return all times that this 
-recurs within the span. All returned events will have the dtstart and 
+If this is a recurring event then it will return all times that this
+recurs within the span. All returned events will have the dtstart and
 dtend properties set and no other time information.
 
-If C<period> is optionally passed then events longer than C<period> will 
+If C<period> is optionally passed then events longer than C<period> will
 be exploded into multiple events.
 
 C<period> can be any of the following
 
-    year month week day hour minute second 
+    year month week day hour minute second
 
-=cut 
+=cut
 
 # this is quite heavily based on 'wgo' in the bin/ directory of Text::vFile::asData
 sub explode {
@@ -657,7 +657,7 @@ sub explode {
     my %e      = $self->_normalise;
 
 
-    
+
 
     my @events;
 
@@ -674,14 +674,14 @@ sub explode {
 
     if($e{recur} && $e{recur}->intersects($span)) {
         my $int_set = $e{recur}->intersection($span);
-      
+
         # Change the event's recurrence details so that only the events
         # inside the time span we're interested in are listed.
         $e{recur} = $int_set;
         my $it    = $e{recur}->iterator;
         while(my $dt = $it->next()) {
 	        next if $e{exrule} && $e{exrule}->contains($dt);
-            next if $e{exdate} && $e{exdate}->contains($dt);            
+            next if $e{exdate} && $e{exdate}->contains($dt);
             my $event = $self->clone();
             delete $event->{properties}->{$_} for qw(rrule exrule rdate exdate duration period);
 
@@ -693,7 +693,7 @@ sub explode {
             $event->all_day($self->all_day);
             $event->original($self);
             push @events, $event;
-    
+
         }
     }
     return @events if (!defined $period);
@@ -706,7 +706,7 @@ sub explode {
 
 Store or fetch a reference to the original event this was derived from.
 
-=cut 
+=cut
 
 sub original {
     my $self = shift;
@@ -747,13 +747,13 @@ sub split_up {
         $e->original($event);
         # $e->all_day($event->all_day) if $period ne 'second' && $period ne 'minute' && $period ne 'day';
 
-        my $end = $dt->truncate( to => $period )->add( "${period}s" => 1 )->subtract( nanoseconds => 1 );        
+        my $end = $dt->truncate( to => $period )->add( "${period}s" => 1 )->subtract( nanoseconds => 1 );
         $e->end($end);
         push @new, $e;
     }
-    # If, say we have a one week and 1 day event and period is  
+    # If, say we have a one week and 1 day event and period is
     # 'week' then need to truncate to one 1 week event and one
-    # day event. 
+    # day event.
     # $end = $e{end} if ( defined $period && $e{end} < $end);
     $new[-1]->end($event->end); # if !$event->all_day;
     return @new;
@@ -782,7 +782,7 @@ sub is_in {
 sub _normalise {
     my $self = shift;
 
-    my %e = ();                         
+    my %e = ();
 
     $e{period}   = $self->period;
     $e{start}    = $self->start;
@@ -795,12 +795,12 @@ sub _normalise {
     $e{rid}      = $self->recurrence_id;
     $e{uid}      = $self->uid;
 
-    
+
     if (defined $e{period}) {
         if (defined $e{start} || defined $e{end}) {
             die "Found a period *and* a start or end:\n".$self->as_string;
         }
-        
+
         $e{start} = $e{period}->start;
         $e{end}   = $e{period}->end;
 
@@ -815,7 +815,7 @@ sub _normalise {
     if (defined $e{end} && defined $e{duration}) {
         die "Found both end *and* duration:\n".$self->as_string;
     }
-    
+
 
     # events can be floating
     #if (!defined $e{end} && !defined $e{duration}) {
@@ -855,7 +855,7 @@ Potential timezone problems?
 
 =head1 SEE ALSO
 
-L<DateTime>, L<DateTime::Set>, L<Data::ICal>, L<Text::vFile::asData>, L<iCal::Parser> 
+L<DateTime>, L<DateTime::Set>, L<Data::ICal>, L<Text::vFile::asData>, L<iCal::Parser>
 
 =cut
 
