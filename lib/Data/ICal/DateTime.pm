@@ -253,8 +253,11 @@ sub end {
 
 Returns 1 if event is all day or 0 if not.
 
-If no end has been set and 1 is passed then will set end to be a 
+If no end has been set and 1 is passed then will set end to be a
 nanosecond before midnight the next day.
+
+The have multi-day all-day events simply set the end time to be
+nanosecond before midnight on the last day of the event.
 
 =cut
 
