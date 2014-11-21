@@ -1,0 +1,9 @@
+*.tar.gz
+*.bak
+META.*
+MYMETA.*
+Makefile
+blib
+pm_to_blib
+
+
