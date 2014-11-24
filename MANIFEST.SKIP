@@ -1,6 +1,6 @@
 try
 .tar.gz
-Makefile
+^Makefile$
 Makefile.old
 .svn
 blib
