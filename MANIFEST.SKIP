@@ -1,5 +1,6 @@
 try
 .tar.gz
+MYMETA\.
 ^Makefile$
 Makefile.old
 .svn
